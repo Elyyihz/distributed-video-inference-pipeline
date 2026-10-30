@@ -1,0 +1,69 @@
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: video-pipeline-api
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=distributed-video-inference-pipeline
+      - RABBITMQ_HOST=rabbitmq
+      - POSTGRES_HOST=postgres
+      - YOLO_MODEL_PATH=/models/yolov8n.onnx
+    depends_on:
+      - rabbitmq
+      - postgres
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+    container_name: video-pipeline-worker
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - POSTGRES_HOST=postgres
+      - YOLO_MODEL_PATH=/models/yolov8n.onnx
+    depends_on:
+      - rabbitmq
+      - postgres
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: video-pipeline-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: video-pipeline-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: video-pipeline-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=pipeline_user
+      - POSTGRES_PASSWORD=pipeline_secret
+      - POSTGRES_DB=video_pipeline
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pg_data:
