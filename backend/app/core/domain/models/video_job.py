@@ -54,6 +54,8 @@ class VideoFrameBatchMessage:
         video_uri: Storage URI or file path to video stream.
         start_frame: Beginning frame index.
         end_frame: Ending frame index.
+        retry_count: Execution attempt counter.
+        max_retries: Maximum threshold before routing to DLQ.
     """
 
     job_id: str
@@ -61,6 +63,8 @@ class VideoFrameBatchMessage:
     video_uri: str
     start_frame: int
     end_frame: int
+    retry_count: int = 0
+    max_retries: int = 3
 
 
 @dataclass
